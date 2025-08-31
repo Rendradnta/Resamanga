@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import Komiku from '../server/services/komiku-scraper.js';
 
@@ -16,37 +15,6 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
-
-// Rate limiting untuk Vercel
-const createRateLimit = (windowMs: number, max: number, message: string) => 
-  rateLimit({
-    windowMs,
-    max,
-    message: {
-      status: false,
-      error: {
-        code: "RATE_LIMIT_EXCEEDED",
-        message,
-        details: "Please wait before making more requests"
-      },
-      timestamp: new Date().toISOString()
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-    // Better configuration for serverless
-    skip: (req) => {
-      // Skip rate limiting for health checks
-      return req.path === '/health' || req.path === '/';
-    },
-    keyGenerator: (req) => {
-      // Use x-forwarded-for header or fall back to IP
-      return req.headers['x-forwarded-for'] as string || req.ip || 'unknown';
-    }
-  });
-
-const generalLimit = createRateLimit(60 * 1000, 120, "Too many requests per minute");
-const searchLimit = createRateLimit(60 * 1000, 60, "Too many search requests per minute");
-const chapterLimit = createRateLimit(60 * 1000, 40, "Too many chapter requests per minute");
 
 // Validation schemas
 const searchQuerySchema = z.object({
@@ -103,11 +71,8 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-// Apply general rate limit
-app.use(generalLimit);
-
 // Search manga
-app.get("/search", searchLimit, async (req, res) => {
+app.get("/search", async (req, res) => {
   try {
     const { q } = searchQuerySchema.parse(req.query);
     const cacheKey = `search:${q.toLowerCase()}`;
@@ -185,7 +150,7 @@ app.get("/detail", async (req, res) => {
 });
 
 // Get chapter content
-app.get("/chapter", chapterLimit, async (req, res) => {
+app.get("/chapter", async (req, res) => {
   try {
     const { url } = chapterQuerySchema.parse(req.query);
     const cacheKey = `chapter:${url}`;
@@ -361,11 +326,7 @@ app.get("/", (req, res) => {
       popular: "GET /api/popular?page={page_number}",
       genre: "GET /api/genre/{genre}?page={page_number}"
     },
-    rate_limits: {
-      general: "120 requests per minute",
-      search: "60 requests per minute", 
-      chapter: "40 requests per minute"
-    },
+    info: "No rate limits applied for better compatibility"
     available_genres: [
       "action", "adult", "adventure", "comedy", "cooking", "crime", "demons",
       "drama", "ecchi", "fantasy", "game", "gender-bender", "ghosts", "gore",
