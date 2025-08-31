@@ -7,6 +7,9 @@ import Komiku from '../server/services/komiku-scraper.js';
 const app = express();
 const komiku = new Komiku();
 
+// Trust proxy for Vercel
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({
   origin: true,
@@ -30,6 +33,15 @@ const createRateLimit = (windowMs: number, max: number, message: string) =>
     },
     standardHeaders: true,
     legacyHeaders: false,
+    // Better configuration for serverless
+    skip: (req) => {
+      // Skip rate limiting for health checks
+      return req.path === '/health' || req.path === '/';
+    },
+    keyGenerator: (req) => {
+      // Use x-forwarded-for header or fall back to IP
+      return req.headers['x-forwarded-for'] as string || req.ip || 'unknown';
+    }
   });
 
 const generalLimit = createRateLimit(60 * 1000, 120, "Too many requests per minute");
