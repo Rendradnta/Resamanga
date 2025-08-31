@@ -20,7 +20,10 @@ export default class Komiku {
 
       const img = $(".ims img").attr("src") || "";
       const genre: string[] = [];
-      $(".genre a").each((i, el) => genre.push($(el).text().trim()));
+      $(".genre a").each((_i, el) => {
+        genre.push($(el).text().trim());
+        return true;
+      });
 
       const firstDiv = $(".new1.sd.rd").first();
       const latestDiv = $(".new1.sd.rd").last();
@@ -62,7 +65,7 @@ export default class Komiku {
 
       if (!data.length) return [];
 
-      const results = [];
+      const results: any[] = [];
       for (const v of data) {
         if (!v.url.includes("/manga/")) continue;
 
@@ -201,7 +204,7 @@ export default class Komiku {
         timeout: 15000
       });
       const $ = cheerio.load(html);
-      const results = [];
+      const results: any[] = [];
 
       $(".bge").each((_, el) => {
         const title = $(el).find(".kan h3").text().trim();
@@ -287,7 +290,7 @@ export default class Komiku {
         timeout: 15000
       });
       const $ = cheerio.load(data);
-      const results = [];
+      const results: any[] = [];
 
       $(".bge").each((_, el) => {
         const title = $(el).find(".kan h3").text().trim();
